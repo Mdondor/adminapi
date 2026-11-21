@@ -22,3 +22,25 @@ app = FastAPI(title="adminapi")                           # Création de l'appli
 @app.get("/health")                                       # Associe la fonction health à la route GET /health
 def health():                                             # Fonction exécutée à chaque requête sur /health
     return {"status": "ok"}                               # Dictionnaire converti en JSON par FastAPI, avec le code 200
+
+
+
+# --- Conversion d'un conteneur de la LISTE Docker au format du contrat
+def depuis_liste(c):                                      # Reçoit un conteneur tel que le renvoie /containers/json
+    return {                                              # Renvoie un dictionnaire au format du contrat
+        "id": c["Id"],                                    # Identifiant complet de 64 caractères
+        "name": c["Names"][0].lstrip("/"),                # Premier nom, sans le "/" ajouté par Docker
+        "image": c["Image"],                              # Image du conteneur
+        "state": c["State"],                              # État ; dans la liste, c'est directement une chaîne
+    }
+
+
+# --- GET /containers
+@app.get("/containers")                                   # Associe la fonction lister à la route GET /containers
+def lister():                                             # Fonction exécutée à chaque requête sur /containers
+    filtre = json.dumps({"label": [f"{LABEL}=true"]})     # Filtre Docker encodé en JSON : seulement les conteneurs étiquetés
+    r = docker.get(f"{DOCKER}/containers/json",           # Requête de la liste des conteneurs
+                   params={"all": "true", "filters": filtre},  # all=true : y compris arrêtés ; filters : par label
+                   timeout=TIMEOUT)                       # Abandon si aucune réponse dans le délai
+    r.raise_for_status()                                  # Lève une erreur si Docker répond 4xx ou 5xx
+    return [depuis_liste(c) for c in r.json()]            # Chaque conteneur converti au format du contrat
