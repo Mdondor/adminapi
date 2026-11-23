@@ -93,3 +93,13 @@ def demarrer(ident):                                      # Démarre un conteneu
         raise HTTPException(status_code=409, detail="Conteneur déjà démarré")  # 409 : raise_for_status ignore les 304
     r.raise_for_status()                                  # Lève une erreur pour un autre code 4xx inattendu
     return lire(conteneur["id"])                          # Relecture APRÈS le démarrage, pour renvoyer state = running
+
+
+def supprimer(ident):                                     # Supprime un conteneur géré, même s'il tourne
+    conteneur = lire(ident)                               # Vérifie d'abord qu'il existe et porte le label ; sinon 404
+    r = appeler("DELETE", f"/containers/{conteneur['id']}",  # Requête de suppression du conteneur
+                params={"force": "true"}, timeout=30)     # force=true : l'arrête d'abord s'il tourne
+    if r.status_code == 404:                              # Conteneur disparu entre la lecture et la suppression
+        raise HTTPException(status_code=404, detail="Conteneur inconnu")  # 404 propre
+    r.raise_for_status()                                  # Lève une erreur pour un autre code 4xx inattendu
+

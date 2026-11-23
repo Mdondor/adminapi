@@ -1,7 +1,7 @@
 """adminapi : API d'administration des conteneurs."""    # Description du module
 
 from typing import Literal                                # Literal : n'accepter qu'une liste fermée de valeurs
-from fastapi import FastAPI                               # Classe qui crée l'application
+from fastapi import FastAPI, Response                     # FastAPI : l'application ; Response : réponse 204 sans corps
 from pydantic import BaseModel, Field                     # BaseModel : décrire un corps JSON ; Field : ajouter des contraintes
 from app import docker_client                             # Module qui regroupe tous les appels à Docker
 
@@ -46,3 +46,9 @@ def arreter(id: str):                                     # FastAPI place la val
 @app.post("/containers/{id}/start")                       # Route POST /containers/{id}/start ; code 200 par défaut
 def demarrer(id: str):                                    # FastAPI place la valeur de {id} dans la variable id
     return docker_client.demarrer(id)                     # Conteneur démarré, 409 s'il l'était déjà, 404 s'il n'est pas géré
+
+
+@app.delete("/containers/{id}", status_code=204)          # Route DELETE /containers/{id} ; code 204 en cas de succès
+def supprimer(id: str):                                   # FastAPI place la valeur de {id} dans la variable id
+    docker_client.supprimer(id)                           # Suppression, ou 404 si le conteneur n'est pas géré
+    return Response(status_code=204)                      # Réponse 204, sans aucun corps
