@@ -84,3 +84,12 @@ def arreter(ident):                                       # Arrête un conteneur
         raise HTTPException(status_code=409, detail="Conteneur déjà arrêté")  # 409 : raise_for_status ignore les 304
     r.raise_for_status()                                  # Lève une erreur pour un autre code 4xx inattendu
     return lire(conteneur["id"])                          # Relecture APRÈS l'arrêt, pour renvoyer state = exited
+
+
+def demarrer(ident):                                      # Démarre un conteneur géré, puis le renvoie
+    conteneur = lire(ident)                               # Vérifie d'abord qu'il existe et porte le label ; sinon 404
+    r = appeler("POST", f"/containers/{conteneur['id']}/start")  # Requête de démarrage du conteneur
+    if r.status_code == 304:                              # Docker : le conteneur était déjà démarré
+        raise HTTPException(status_code=409, detail="Conteneur déjà démarré")  # 409 : raise_for_status ignore les 304
+    r.raise_for_status()                                  # Lève une erreur pour un autre code 4xx inattendu
+    return lire(conteneur["id"])                          # Relecture APRÈS le démarrage, pour renvoyer state = running

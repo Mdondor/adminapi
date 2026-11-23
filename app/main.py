@@ -41,3 +41,8 @@ def creer(demande: ConteneurACreer):                      # Corps validé par le
 @app.post("/containers/{id}/stop")                        # Route POST /containers/{id}/stop ; code 200 par défaut
 def arreter(id: str):                                     # FastAPI place la valeur de {id} dans la variable id
     return docker_client.arreter(id)                      # Conteneur arrêté, 409 s'il l'était déjà, 404 s'il n'est pas géré
+
+
+@app.post("/containers/{id}/start")                       # Route POST /containers/{id}/start ; code 200 par défaut
+def demarrer(id: str):                                    # FastAPI place la valeur de {id} dans la variable id
+    return docker_client.demarrer(id)                     # Conteneur démarré, 409 s'il l'était déjà, 404 s'il n'est pas géré
