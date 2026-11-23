@@ -1,9 +1,21 @@
 """adminapi : API d'administration des conteneurs."""    # Description du module
 
+from typing import Literal                                # Literal : n'accepter qu'une liste fermée de valeurs
 from fastapi import FastAPI                               # Classe qui crée l'application
+from pydantic import BaseModel, Field                     # BaseModel : décrire un corps JSON ; Field : ajouter des contraintes
 from app import docker_client                             # Module qui regroupe tous les appels à Docker
 
 app = FastAPI(title="adminapi")                           # Création de l'application ; le titre s'affiche dans /docs
+
+
+# --- Corps attendu par POST /containers
+Image = Literal["nginx:alpine", "redis:alpine", "httpd:alpine"]  # Liste blanche : seules ces trois images sont acceptées
+
+
+class ConteneurACreer(BaseModel):                         # Forme du JSON attendu à la création
+    name: str = Field(pattern=r"^[a-z][a-z0-9-]{1,30}$",  # Une minuscule, puis 1 à 30 minuscules, chiffres ou tirets
+                      examples=["web2"])                  # Exemple affiché dans /docs
+    image: Image                                          # Doit être l'une des trois images autorisées
 
 
 @app.get("/health")                                       # Route GET /health
@@ -19,3 +31,9 @@ def lister():                                             # Fonction exécutée 
 @app.get("/containers/{id}")                              # Route GET /containers/{id}
 def detail(id: str):                                      # FastAPI place la valeur de {id} dans la variable id
     return docker_client.lire(id)                         # Conteneur géré, ou 404 s'il est inconnu ou non géré
+
+
+
+@app.post("/containers", status_code=201)                 # Route POST /containers ; code 201 en cas de succès
+def creer(demande: ConteneurACreer):                      # Corps validé par le modèle ; sinon 422 automatique
+    return docker_client.creer(demande.name, demande.image)  # Conteneur créé et démarré, au format du contrat

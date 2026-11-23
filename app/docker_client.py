@@ -61,3 +61,16 @@ def lire(ident):                                          # Détail d'un contene
     return depuis_detail(d)                               # Conteneur au format du contrat
 
 
+def creer(nom, image):                                    # Crée, étiquette et démarre un conteneur, puis le renvoie
+    corps = {"Image": image, "Labels": {LABEL: "true"}}   # Image demandée et label qui rend le conteneur géré par l'API
+    r = appeler("POST", "/containers/create",             # Requête de création du conteneur
+                params={"name": nom}, json=corps)         # Nom passé en paramètre d'URL, corps envoyé en JSON
+    if r.status_code == 409:                              # Docker : un conteneur porte déjà ce nom
+        raise HTTPException(status_code=409, detail="Nom déjà pris")  # 409 renvoyé au client
+    if r.status_code == 404:                              # Docker : l'image n'est pas présente sur la machine
+        raise HTTPException(status_code=502, detail=f"Image {image} absente de la machine")  # Problème côté amont : 502
+    r.raise_for_status()                                  # Lève une erreur pour un autre code 4xx inattendu
+    ident = r.json()["Id"]                                # Identifiant du conteneur créé
+    r = appeler("POST", f"/containers/{ident}/start")     # create ne démarre pas le conteneur : on le démarre
+    r.raise_for_status()                                  # Lève une erreur si le démarrage échoue
+    return lire(ident)                                    # Relecture APRÈS le démarrage, pour renvoyer state = running
