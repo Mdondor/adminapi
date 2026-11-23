@@ -33,7 +33,11 @@ def detail(id: str):                                      # FastAPI place la val
     return docker_client.lire(id)                         # Conteneur géré, ou 404 s'il est inconnu ou non géré
 
 
-
 @app.post("/containers", status_code=201)                 # Route POST /containers ; code 201 en cas de succès
 def creer(demande: ConteneurACreer):                      # Corps validé par le modèle ; sinon 422 automatique
     return docker_client.creer(demande.name, demande.image)  # Conteneur créé et démarré, au format du contrat
+
+
+@app.post("/containers/{id}/stop")                        # Route POST /containers/{id}/stop ; code 200 par défaut
+def arreter(id: str):                                     # FastAPI place la valeur de {id} dans la variable id
+    return docker_client.arreter(id)                      # Conteneur arrêté, 409 s'il l'était déjà, 404 s'il n'est pas géré

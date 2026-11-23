@@ -74,3 +74,13 @@ def creer(nom, image):                                    # Crée, étiquette et
     r = appeler("POST", f"/containers/{ident}/start")     # create ne démarre pas le conteneur : on le démarre
     r.raise_for_status()                                  # Lève une erreur si le démarrage échoue
     return lire(ident)                                    # Relecture APRÈS le démarrage, pour renvoyer state = running
+
+
+def arreter(ident):                                       # Arrête un conteneur géré, puis le renvoie
+    conteneur = lire(ident)                               # Vérifie d'abord qu'il existe et porte le label ; sinon 404
+    r = appeler("POST", f"/containers/{conteneur['id']}/stop",  # Requête d'arrêt du conteneur
+                params={"t": 2}, timeout=30)              # 2 s pour s'arrêter proprement ; délai d'attente plus long
+    if r.status_code == 304:                              # Docker : le conteneur était déjà arrêté
+        raise HTTPException(status_code=409, detail="Conteneur déjà arrêté")  # 409 : raise_for_status ignore les 304
+    r.raise_for_status()                                  # Lève une erreur pour un autre code 4xx inattendu
+    return lire(conteneur["id"])                          # Relecture APRÈS l'arrêt, pour renvoyer state = exited
